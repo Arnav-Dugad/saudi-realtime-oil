@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSA Institutional Macro Terminal</title>
+    <style>
+        :root {
+            --bg-base: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --panel-border: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-blue: #0ea5e9;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-gold: #fbbf24;
+            --accent-teal: #14b8a6;
+            --glow-green: rgba(16, 185, 129, 0.15);
+            --glow-gold: rgba(251, 191, 36, 0.1);
+        }
+
+        body { 
+            background: var(--bg-base); 
+            color: var(--text-main); 
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Consolas, monospace; 
+            padding: 15px; 
+            margin: 0;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--panel-border);
+            margin-bottom: 20px;
+        }
+
+        .header h1 { margin: 0; font-size: 1.6rem; letter-spacing: 2px; font-weight: 700; color: #e2e8f0; display: flex; align-items: center; gap: 10px; }
+        
+        .live-indicator {
+            width: 10px; height: 10px; background-color: var(--accent-green); border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green); animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .status-container { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+        .api-status { font-size: 0.75rem; background: #0f172a; border: 1px solid var(--panel-border); padding: 4px 10px; border-radius: 15px; color: var(--accent-blue); font-family: ui-monospace; }
+        #last-sync { font-size: 0.65rem; color: var(--text-muted); font-family: ui-monospace; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; }
+
+        .card { 
+            background: var(--panel-bg); padding: 20px; border-radius: 8px; 
+            border: 1px solid var(--panel-border); display: flex; flex-direction: column;
+        }
+
+        .col-span-12 { grid-column: span 12; }
+        .col-span-8 { grid-column: span 8; }
+        .col-span-6 { grid-column: span 6; }
+        .col-span-4 { grid-column: span 4; }
+        .col-span-3 { grid-column: span 3; }
+        .col-span-2 { grid-column: span 2; }
+
+        .main-card { text-align: center; border-color: var(--accent-green); box-shadow: 0 0 35px var(--glow-green); justify-content: center; }
+        .gov-card { text-align: center; border-color: var(--accent-gold); box-shadow: 0 0 35px var(--glow-gold); }
+        .non-oil-card { text-align: center; border-color: var(--accent-teal); }
+
+        .value { font-size: 1.8rem; margin: 5px 0; font-weight: 700; font-family: ui-monospace, monospace; }
+        .main-value { font-size: 3.5rem; color: var(--accent-green); text-shadow: 0 0 20px var(--glow-green); }
+        .sub-value { font-size: 1.1rem; color: var(--text-muted); font-family: ui-monospace, monospace; font-weight: 600; margin-top: -5px; }
+        .gov-value { font-size: 2.8rem; color: var(--accent-gold); text-shadow: 0 0 20px var(--glow-gold); }
+        .label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        .region-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--panel-border); text-align: left;
+        }
+        .region-stat .label { font-size: 0.65rem; }
+        .region-stat .val { font-size: 1.1rem; font-weight: bold; font-family: ui-monospace; }
+
+        /* Simulator Slider */
+        .simulator-box { margin-top: auto; padding-top: 15px; border-top: 1px solid var(--panel-border); }
+        input[type=range] { width: 100%; margin: 10px 0; background: transparent; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-runnable-track { background: var(--panel-border); height: 4px; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; background: var(--accent-blue); border-radius: 50%; cursor: pointer; margin-top: -6px; }
+        
+        .section-title { grid-column: span 12; margin: 20px 0 5px 0; font-size: 1rem; color: #e2e8f0; font-weight: bold; border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
+        .badge { background: rgba(14, 165, 233, 0.1); color: var(--accent-blue); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(14, 165, 233, 0.2); }
+        .badge-gold { background: rgba(251, 191, 36, 0.1); color: var(--accent-gold); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(251, 191, 36, 0.2); }
+
+        @media (max-width: 1200px) {
+            .col-span-8, .col-span-6, .col-span-4, .col-span-3, .col-span-2 { grid-column: span 12; }
+            .region-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><div class="live-indicator"></div> MACRO INTELLIGENCE TERMINAL: KSA</h1>
+            <div class="status-container">
+                <div id="api-status-oil" class="api-status">Connecting Oil API...</div>
+                <div id="api-status-fx" class="api-status" style="color: var(--accent-purple);">Connecting FX API...</div>
+                <div id="last-sync">Awaiting Sync...</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card main-card col-span-8">
+                <div class="label" style="color: var(--accent-green);">Aramco Total Crude Revenue (Gross)</div>
+                <div id="revenue" class="value main-value">Loading...</div>
+                <div class="sub-value">
+                    <span id="revenue-sar" style="color: var(--accent-green);">SAR 0</span> | 
+                    <span id="revenue-inr" style="color: var(--accent-amber);">₹ 0</span>
+                </div>
+                <div class="label" style="margin-top: 10px;">Accrued since midnight UTC • Live Multi-Currency Conversion</div>
+                
+                <div class="region-grid">
+                    <div class="region-stat" style="border-left: 3px solid var(--accent-amber); padding-left: 10px;">
+                        <div class="label">Asia Total (70%)</div>
+                        <div id="rev-asia" class="val" style="color: var(--accent-amber);">$0</div>
+                        <div class="label" style="text-transform: none;">Dubai/Oman Proxy</div>
+                    </div>
+                    <div class="region-stat" style="border-left: 3px solid var(--accent-purple); padding-left: 10px;">
+                        <div class="label">India Corridor (Subset)</div>
+                        <div id="rev-india" class="val" style="color: var(--accent-purple);">$0</div>
+                        <div class="label" style="text-transform: none;">~1.0M bpd volume</div>
+                    </div>
+                    <div class="region-stat" style="border-left: 3px solid var(--accent-blue); padding-left: 10px;">
+                        <div class="label">West (US + EU) (30%)</div>
+                        <div id="rev-west" class="val" style="color: var(--accent-blue);">$0</div>
+                        <div class="label" style="text-transform: none;">Brent/ASCI Proxies</div>
+                    </div>
+                    <div class="region-stat" style="border-left: 3px solid var(--text-muted); padding-left: 10px;">
+                        <div class="label">Domestic Retained</div>
+                        <div id="rev-dom" class="val" style="color: var(--text-main);">$0</div>
+                        <div class="label" style="text-transform: none;">Internal Grid Subsidies</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card col-span-4" style="border-color: var(--accent-blue);">
+                <div class="label" style="color: var(--accent-blue);">OPEC+ Supply Simulator</div>
+                <div class="value" id="slider-display" style="font-size: 2.2rem;">10.09M</div>
+                <div class="label">Barrels Per Day (Quota)</div>
+                
+                <div class="simulator-box">
+                    <input type="range" id="production-slider" min="7000000" max="12000000" step="10000" value="10086000">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);">
+                        <span>7M (Cuts)</span>
+                        <span>12M (Max)</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--panel-border);">
+                    <div class="label">Total Barrels Pumped Today</div>
+                    <div id="barrels" class="value" style="font-size: 1.4rem;">0</div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <span>STATE FISCAL ENGINES</span>
+                <span class="badge-gold">LIVE REVENUE STREAMS</span>
+            </div>
+
+            <div class="card gov-card col-span-6">
+                <div class="label" style="color: var(--accent-gold);">Direct Government Take (Oil Tax/Royalty)</div>
+                <div id="gov-revenue" class="value gov-value">$0</div>
+                <div class="label" style="margin-bottom: 10px;">Accrued since midnight UTC</div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 10px;">
+                    <div>
+                        <div class="label">Marginal Tax Rate</div>
+                        <div id="royalty-rate" style="font-family: ui-monospace; font-weight: bold; color: var(--accent-gold);">0%</div>
+                    </div>
+                    <div>
+                        <div class="label">Fiscal Breakeven ($94/bbl)</div>
+                        <div id="breakeven-status" style="font-family: ui-monospace; font-weight: bold;">Calc...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card non-oil-card col-span-6" style="border-color: var(--accent-teal); box-shadow: 0 0 35px rgba(20, 184, 166, 0.1);">
+                <div class="label" style="color: var(--accent-teal);">Vision 2030 Non-Oil Revenue (Taxes/FDI)</div>
+                <div id="non-oil-revenue" class="value gov-value" style="color: var(--accent-teal);">$0</div>
+                <div class="label">Estimated Run-Rate: $320B Annually</div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 10px; margin-top: 10px;">
+                    <div>
+                        <div class="label">Non-Oil GDP Share</div>
+                        <div style="font-family: ui-monospace; font-weight: bold; color: var(--accent-teal);">51.3%</div>
+                    </div>
+                    <div>
+                        <div class="label">Base VAT Rate</div>
+                        <div style="font-family: ui-monospace; font-weight: bold;">15.0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <span>DOWNSTREAM INFRASTRUCTURE & LIVE FX MATRIX</span>
+                <span class="badge">REAL-TIME DATA</span>
+            </div>
+
+            <div class="card col-span-3">
+                <div class="label" style="color: var(--accent-purple);">SABIC Market Valuation</div>
+                <div class="value" style="font-size: 1.6rem; color: var(--text-main);">$43.3 Billion</div>
+                <div class="label">Global Petrochemical Anchor</div>
+            </div>
+
+            <div class="card col-span-3">
+                <div class="label" style="color: var(--accent-purple);">Jubail Industrial Output</div>
+                <div class="value" style="font-size: 1.6rem; color: var(--text-main);">7% Global</div>
+                <div class="label">Share of World Petrochemicals</div>
+            </div>
+
+            <div class="card col-span-6" style="background: #0f172a; border-color: var(--accent-blue);">
+                <div class="label">Live Interbank FX Rates (via ExchangeRate-API)</div>
+                <div style="display: flex; justify-content: space-around; margin-top: 10px;">
+                    <div style="text-align: center;">
+                        <div class="label" style="color: var(--accent-blue);">USD Base</div>
+                        <div class="value" style="font-size: 1.4rem;">$1.00</div>
+                    </div>
+                    <div style="font-size: 1.5rem; color: var(--text-muted); align-self: center;">=</div>
+                    <div style="text-align: center;">
+                        <div class="label" style="color: var(--accent-green);">Saudi Riyal (SAR)</div>
+                        <div id="fx-sar" class="value" style="font-size: 1.4rem;">Fetching...</div>
+                        <div class="label" style="font-size: 0.6rem;">Live Interbank Peg</div>
+                    </div>
+                    <div style="font-size: 1.5rem; color: var(--text-muted); align-self: center;">=</div>
+                    <div style="text-align: center;">
+                        <div class="label" style="color: var(--accent-amber);">Indian Rupee (INR)</div>
+                        <div id="fx-inr" class="value" style="font-size: 1.4rem;">Fetching...</div>
+                        <div class="label" style="font-size: 0.6rem;">Live Market Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- API & Core Config ---
+        const OIL_API_KEY = '2d56c2e9df5971ccb4c80537cb5694c1065ca92791135cce96be26438c7014ef';
+        const COMMODITY_CODE = 'BRENT_CRUDE_USD'; 
+        const FX_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD'; // 100% Free Live FX API
+        
+        const FISCAL_BREAKEVEN = 94.00; 
+        const COST_PER_BARREL = 10;
+        const NON_OIL_ANNUAL_USD = 320000000000; 
+        
+        // Geographic Ratios
+        const EXPORT_RATIO = 0.70;      
+        const DOMESTIC_RATIO = 0.30;    
+        const ASIA_SHARE = 0.70;
+        const INDIA_SHARE_OF_ASIA = 0.14; 
+        const WEST_SHARE = 0.30; 
+
+        const ASIA_DIFF = -0.50; 
+        const WEST_DIFF = 0.75; 
+        const DOMESTIC_MULTIPLIER = 0.40; 
+        
+        // --- State Variables ---
+        let baseBrentPrice = 84.00; 
+        let liveSAR = 3.7500; // Default fallback
+        let liveINR = 83.00;  // Default fallback
+        let isOilReady = false;
+        let isFXReady = false;
+        let activeDailyBarrels = 10086000; 
+        let effectiveRoyaltyRate = 0;
+
+        // --- Formatters ---
+        const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+        const sarFormatter = new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 });
+        const inrFormatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+        const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+        const percentFormatter = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 });
+
+        // --- Simulator Logic ---
+        const slider = document.getElementById('production-slider');
+        const sliderDisplay = document.getElementById('slider-display');
+
+        slider.addEventListener('input', function() {
+            activeDailyBarrels = parseInt(this.value);
+            sliderDisplay.innerText = (activeDailyBarrels / 1000000).toFixed(2) + "M";
+            updateStaticElements(); 
+        });
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('last-sync').innerText = "Last Market Sync: " + now.toLocaleTimeString() + " UTC";
+        }
+
+        // --- State Fiscal Math ---
+        function calculateGovernmentRoyalty(pricePerBarrel) {
+            let royalty = 0;
+            if (pricePerBarrel <= 70) {
+                royalty = pricePerBarrel * 0.15;
+            } else if (pricePerBarrel > 70 && pricePerBarrel <= 100) {
+                royalty = (70 * 0.15) + ((pricePerBarrel - 70) * 0.45);
+            } else {
+                royalty = (70 * 0.15) + (30 * 0.45) + ((pricePerBarrel - 100) * 0.80);
+            }
+            const incomeTax = (pricePerBarrel - royalty - COST_PER_BARREL) * 0.50;
+            return royalty + incomeTax;
+        }
+
+        // --- Live FX API Fetcher ---
+        async function fetchLiveFX() {
+            const statusDiv = document.getElementById('api-status-fx');
+            try {
+                const response = await fetch(FX_API_URL);
+                const data = await response.json();
+                
+                liveSAR = data.rates.SAR;
+                liveINR = data.rates.INR;
+                
+                document.getElementById('fx-sar').innerText = liveSAR.toFixed(4) + " SAR";
+                document.getElementById('fx-inr').innerText = liveINR.toFixed(2) + " INR";
+                
+                statusDiv.innerText = `FX API: Live`;
+                isFXReady = true;
+                updateTimestamp();
+            } catch (error) {
+                statusDiv.innerText = `FX API: Using Fallback`;
+                statusDiv.style.color = "var(--text-muted)";
+            }
+        }
+
+        // --- Live Oil API Fetcher ---
+        async function fetchLiveOil() {
+            const statusDiv = document.getElementById('api-status-oil');
+            try {
+                const response = await fetch(`https://api.oilpriceapi.com/v1/prices/latest?by_code=${COMMODITY_CODE}`, {
+                    headers: { 'Authorization': `Token ${OIL_API_KEY}`, 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    baseBrentPrice = data.data.price;
+                    statusDiv.innerText = `Oil API: Brent $${baseBrentPrice.toFixed(2)}`;
+                } else { throw new Error("API Limit"); }
+            } catch (error) {
+                statusDiv.innerText = `Oil API: Offline/Limit`;
+                statusDiv.style.color = "var(--text-muted)";
+            }
+            isOilReady = true;
+            updateStaticElements();
+            updateTimestamp();
+        }
+
+        function updateStaticElements() {
+            const statusDiv = document.getElementById('breakeven-status');
+            const diff = baseBrentPrice - FISCAL_BREAKEVEN;
+            
+            if (diff >= 0) {
+                statusDiv.innerHTML = `<span style="color: var(--accent-green);">+$${diff.toFixed(2)} Surplus</span>`;
+            } else {
+                statusDiv.innerHTML = `<span style="color: var(--accent-red);">-$${Math.abs(diff).toFixed(2)} Deficit</span>`;
+            }
+
+            const govTakePerBbl = calculateGovernmentRoyalty(baseBrentPrice);
+            effectiveRoyaltyRate = govTakePerBbl / baseBrentPrice;
+            document.getElementById('royalty-rate').innerText = percentFormatter.format(effectiveRoyaltyRate);
+        }
+
+        function updateLiveCounters() {
+            if (!isOilReady) return;
+
+            const now = new Date();
+            const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const secondsSinceMidnight = (now - startOfDay) / 1000;
+            
+            // --- 1. Production Flow ---
+            const barrelsPerSecond = activeDailyBarrels / 86400;
+            const barrelsPumpedSoFar = secondsSinceMidnight * barrelsPerSecond;
+            
+            // --- 2. Oil Revenue Segments ---
+            const exportBarrels = barrelsPumpedSoFar * EXPORT_RATIO;
+            const domesticBarrels = barrelsPumpedSoFar * DOMESTIC_RATIO;
+
+            const asiaBarrels = exportBarrels * ASIA_SHARE;
+            const indiaBarrels = asiaBarrels * INDIA_SHARE_OF_ASIA; 
+            const westBarrels = exportBarrels * WEST_SHARE;
+
+            const asiaRev = asiaBarrels * (baseBrentPrice + ASIA_DIFF);
+            const indiaRev = indiaBarrels * (baseBrentPrice + ASIA_DIFF); 
+            const westRev = westBarrels * (baseBrentPrice + WEST_DIFF);
+            const domesticRev = domesticBarrels * (baseBrentPrice * DOMESTIC_MULTIPLIER);
+
+            const totalGrossRevenueUSD = asiaRev + westRev + domesticRev;
+
+            // --- 3. Live FX Conversions ---
+            const totalGrossRevenueSAR = totalGrossRevenueUSD * liveSAR;
+            const totalGrossRevenueINR = totalGrossRevenueUSD * liveINR;
+
+            // --- 4. Oil Government Take ---
+            const blendedAveragePrice = totalGrossRevenueUSD / barrelsPumpedSoFar;
+            const totalGovRevenue = calculateGovernmentRoyalty(blendedAveragePrice) * barrelsPumpedSoFar;
+
+            // --- 5. Non-Oil Revenue Engine ---
+            const nonOilPerSecond = NON_OIL_ANNUAL_USD / (365 * 86400);
+            const nonOilRevenueSoFar = secondsSinceMidnight * nonOilPerSecond;
+
+            // --- 6. DOM Updates ---
+            document.getElementById('revenue').innerText = currencyFormatter.format(totalGrossRevenueUSD);
+            document.getElementById('revenue-sar').innerText = sarFormatter.format(totalGrossRevenueSAR);
+            document.getElementById('revenue-inr').innerText = inrFormatter.format(totalGrossRevenueINR);
+            
+            document.getElementById('gov-revenue').innerText = currencyFormatter.format(totalGovRevenue);
+            document.getElementById('non-oil-revenue').innerText = currencyFormatter.format(nonOilRevenueSoFar);
+            document.getElementById('barrels').innerText = numberFormatter.format(barrelsPumpedSoFar);
+            
+            document.getElementById('rev-asia').innerText = currencyFormatter.format(asiaRev);
+            document.getElementById('rev-india').innerText = currencyFormatter.format(indiaRev);
+            document.getElementById('rev-west').innerText = currencyFormatter.format(westRev);
+            document.getElementById('rev-dom').innerText = currencyFormatter.format(domesticRev);
+        }
+
+        // --- Initialization ---
+        fetchLiveOil();
+        fetchLiveFX();
+        
+        setInterval(updateLiveCounters, 80); 
+        
+        // Prevent burning through the Oil API limit, check FX API every 10 mins
+        setInterval(fetchLiveOil, 60000); 
+        setInterval(fetchLiveFX, 600000); 
+    </script>
+</body>
+</html>
