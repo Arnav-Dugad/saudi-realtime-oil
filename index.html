@@ -3,434 +3,1632 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KSA Institutional Macro Terminal</title>
+    <title>KSA Macro Intelligence Terminal v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
         :root {
-            --bg-base: #020617;
-            --panel-bg: rgba(15, 23, 42, 0.85);
-            --panel-border: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #64748b;
-            --accent-green: #10b981;
-            --accent-blue: #0ea5e9;
-            --accent-purple: #8b5cf6;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-gold: #fbbf24;
-            --accent-teal: #14b8a6;
-            --glow-green: rgba(16, 185, 129, 0.15);
-            --glow-gold: rgba(251, 191, 36, 0.1);
+            --bg-base: #010b18;
+            --bg-panel: #040f1e;
+            --bg-card: rgba(4, 15, 30, 0.92);
+            --border: #0d2137;
+            --border-bright: #0f3554;
+            --text-main: #e8f4fd;
+            --text-muted: #4a7a9b;
+            --text-dim: #1e4060;
+
+            --green: #00e5a0;
+            --green-dim: rgba(0, 229, 160, 0.12);
+            --green-glow: rgba(0, 229, 160, 0.25);
+            --blue: #0ea5e9;
+            --blue-dim: rgba(14, 165, 233, 0.1);
+            --purple: #a78bfa;
+            --purple-dim: rgba(167, 139, 250, 0.1);
+            --amber: #fbbf24;
+            --amber-dim: rgba(251, 191, 36, 0.1);
+            --amber-glow: rgba(251, 191, 36, 0.2);
+            --red: #f87171;
+            --red-dim: rgba(248, 113, 113, 0.1);
+            --teal: #2dd4bf;
+            --teal-dim: rgba(45, 212, 191, 0.1);
+            --cyan: #22d3ee;
+            --orange: #fb923c;
+
+            --font-display: 'Barlow Condensed', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+            --font-ui: 'Rajdhani', sans-serif;
         }
 
-        body { 
-            background: var(--bg-base); 
-            color: var(--text-main); 
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Consolas, monospace; 
-            padding: 15px; 
-            margin: 0;
-            line-height: 1.5;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-ui);
             font-size: 14px;
+            line-height: 1.5;
+            overflow-x: hidden;
         }
 
-        .container { max-width: 1600px; margin: 0 auto; }
-        
+        /* Scanline overlay */
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none; z-index: 9999;
+        }
+
+        /* Grid noise bg */
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(14,165,233,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14,165,233,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .container {
+            max-width: 1700px; margin: 0 auto;
+            padding: 12px 16px;
+            position: relative; z-index: 1;
+        }
+
+        /* ─── HEADER ─────────────────────────── */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--panel-border);
-            margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px;
+            border-bottom: 1px solid var(--border-bright);
+            margin-bottom: 16px;
+            gap: 12px;
         }
 
-        .header h1 { margin: 0; font-size: 1.6rem; letter-spacing: 2px; font-weight: 700; color: #e2e8f0; display: flex; align-items: center; gap: 10px; }
-        
-        .live-indicator {
-            width: 10px; height: 10px; background-color: var(--accent-green); border-radius: 50%;
-            box-shadow: 0 0 10px var(--accent-green); animation: pulse 2s infinite;
+        .header-left { display: flex; align-items: center; gap: 14px; }
+
+        .terminal-logo {
+            width: 42px; height: 42px;
+            border: 2px solid var(--green);
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px var(--green-glow), inset 0 0 10px var(--green-dim);
+            flex-shrink: 0;
         }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .terminal-logo svg { width: 24px; height: 24px; }
 
-        .status-container { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .api-status { font-size: 0.75rem; background: #0f172a; border: 1px solid var(--panel-border); padding: 4px 10px; border-radius: 15px; color: var(--accent-blue); font-family: ui-monospace; }
-        #last-sync { font-size: 0.65rem; color: var(--text-muted); font-family: ui-monospace; }
-
-        .dashboard-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; }
-
-        .card { 
-            background: var(--panel-bg); padding: 20px; border-radius: 8px; 
-            border: 1px solid var(--panel-border); display: flex; flex-direction: column;
+        .header h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            color: var(--text-main);
+            line-height: 1.1;
+        }
+        .header h1 span { color: var(--green); }
+        .header-sub {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-top: 2px;
         }
 
-        .col-span-12 { grid-column: span 12; }
-        .col-span-8 { grid-column: span 8; }
-        .col-span-6 { grid-column: span 6; }
-        .col-span-4 { grid-column: span 4; }
-        .col-span-3 { grid-column: span 3; }
-        .col-span-2 { grid-column: span 2; }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 
-        .main-card { text-align: center; border-color: var(--accent-green); box-shadow: 0 0 35px var(--glow-green); justify-content: center; }
-        .gov-card { text-align: center; border-color: var(--accent-gold); box-shadow: 0 0 35px var(--glow-gold); }
-        .non-oil-card { text-align: center; border-color: var(--accent-teal); }
+        .status-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .pill {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            padding: 3px 9px;
+            border-radius: 20px;
+            border: 1px solid;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .pill-dot { width: 5px; height: 5px; border-radius: 50%; animation: pulse 2s infinite; }
+        .pill-green { border-color: rgba(0,229,160,0.3); color: var(--green); background: var(--green-dim); }
+        .pill-green .pill-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .pill-blue { border-color: rgba(14,165,233,0.3); color: var(--blue); background: var(--blue-dim); }
+        .pill-blue .pill-dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+        .pill-purple { border-color: rgba(167,139,250,0.3); color: var(--purple); background: var(--purple-dim); }
+        .pill-purple .pill-dot { background: var(--purple); }
+        .pill-amber { border-color: rgba(251,191,36,0.3); color: var(--amber); background: var(--amber-dim); }
+        .pill-amber .pill-dot { background: var(--amber); }
+        .pill-red { border-color: rgba(248,113,113,0.3); color: var(--red); background: var(--red-dim); }
+        .pill-red .pill-dot { background: var(--red); }
+        #last-sync { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-dim); }
 
-        .value { font-size: 1.8rem; margin: 5px 0; font-weight: 700; font-family: ui-monospace, monospace; }
-        .main-value { font-size: 3.5rem; color: var(--accent-green); text-shadow: 0 0 20px var(--glow-green); }
-        .sub-value { font-size: 1.1rem; color: var(--text-muted); font-family: ui-monospace, monospace; font-weight: 600; margin-top: -5px; }
-        .gov-value { font-size: 2.8rem; color: var(--accent-gold); text-shadow: 0 0 20px var(--glow-gold); }
-        .label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* ─── SECTION HEADERS ─────────────────── */
+        .section-header {
+            grid-column: span 12;
+            display: flex; align-items: center; gap: 12px;
+            margin: 18px 0 4px;
+        }
+        .section-header::before {
+            content: '';
+            width: 4px; height: 20px;
+            background: var(--green);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--green);
+        }
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .section-header .sh-badge {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background: var(--blue-dim);
+            border: 1px solid rgba(14,165,233,0.2);
+            color: var(--blue);
+        }
+        .section-header .sh-badge-gold {
+            background: var(--amber-dim);
+            border-color: rgba(251,191,36,0.2);
+            color: var(--amber);
+        }
+
+        /* ─── GRID ────────────────────────────── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 12px;
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-9  { grid-column: span 9; }
+        .col-8  { grid-column: span 8; }
+        .col-7  { grid-column: span 7; }
+        .col-6  { grid-column: span 6; }
+        .col-5  { grid-column: span 5; }
+        .col-4  { grid-column: span 4; }
+        .col-3  { grid-column: span 3; }
+        .col-2  { grid-column: span 2; }
+
+        /* ─── CARDS ───────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+        }
+
+        .card-corner {
+            position: absolute; top: 0; right: 0;
+            width: 20px; height: 20px;
+            border-top: 2px solid; border-right: 2px solid;
+            border-color: var(--border-bright);
+            border-radius: 0 6px 0 0;
+        }
+        .card-corner-bl {
+            position: absolute; bottom: 0; left: 0;
+            width: 16px; height: 16px;
+            border-bottom: 1px solid; border-left: 1px solid;
+            border-color: var(--border);
+            border-radius: 0 0 0 6px;
+        }
+
+        /* ─── HERO REVENUE CARD ───────────────── */
+        .hero-card {
+            border-color: rgba(0,229,160,0.3);
+            box-shadow: 0 0 50px rgba(0,229,160,0.07), inset 0 0 60px rgba(0,229,160,0.03);
+        }
+        .hero-card::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0,229,160,0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--green);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .hero-value {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 4.5rem;
+            color: var(--green);
+            line-height: 1;
+            margin: 6px 0 2px;
+            text-shadow: 0 0 40px rgba(0,229,160,0.4);
+            letter-spacing: -1px;
+        }
+        .hero-sub {
+            display: flex; gap: 16px; align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+        .hero-sar { color: var(--green); opacity: 0.8; }
+        .hero-inr { color: var(--amber); }
+
         .region-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-            margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--panel-border); text-align: left;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 8px; margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
         }
-        .region-stat .label { font-size: 0.65rem; }
-        .region-stat .val { font-size: 1.1rem; font-weight: bold; font-family: ui-monospace; }
+        .region-item {
+            padding: 10px;
+            border-left: 2px solid;
+            border-radius: 0 4px 4px 0;
+        }
+        .region-item .ri-label {
+            font-size: 0.6rem; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        .region-item .ri-val {
+            font-family: var(--font-display);
+            font-weight: 700; font-size: 1.25rem;
+            margin: 2px 0;
+        }
+        .region-item .ri-sub { font-size: 0.6rem; color: var(--text-muted); }
 
-        /* Simulator Slider */
-        .simulator-box { margin-top: auto; padding-top: 15px; border-top: 1px solid var(--panel-border); }
-        input[type=range] { width: 100%; margin: 10px 0; background: transparent; -webkit-appearance: none; }
-        input[type=range]::-webkit-slider-runnable-track { background: var(--panel-border); height: 4px; border-radius: 2px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; background: var(--accent-blue); border-radius: 50%; cursor: pointer; margin-top: -6px; }
-        
-        .section-title { grid-column: span 12; margin: 20px 0 5px 0; font-size: 1rem; color: #e2e8f0; font-weight: bold; border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
-        .badge { background: rgba(14, 165, 233, 0.1); color: var(--accent-blue); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(14, 165, 233, 0.2); }
-        .badge-gold { background: rgba(251, 191, 36, 0.1); color: var(--accent-gold); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(251, 191, 36, 0.2); }
+        /* ─── SIMULATOR CARD ──────────────────── */
+        .sim-card { border-color: rgba(14,165,233,0.25); }
+        .sim-label {
+            font-family: var(--font-mono); font-size: 0.58rem;
+            letter-spacing: 2px; color: var(--blue); text-transform: uppercase;
+        }
+        .sim-value {
+            font-family: var(--font-display); font-weight: 900;
+            font-size: 2.8rem; color: var(--text-main); line-height: 1;
+            margin: 4px 0;
+        }
+        input[type=range] {
+            width: 100%; margin: 10px 0;
+            background: transparent; -webkit-appearance: none; cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: var(--border); height: 3px; border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 14px; width: 14px;
+            background: var(--blue); border-radius: 50%;
+            cursor: pointer; margin-top: -5.5px;
+            box-shadow: 0 0 8px var(--blue);
+        }
 
+        /* ─── MINI STAT CARDS ─────────────────── */
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--text-muted);
+        }
+        .stat-value {
+            font-family: var(--font-display);
+            font-weight: 800; font-size: 2rem;
+            line-height: 1.1; margin: 4px 0 2px;
+        }
+        .stat-sub { font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+        .delta {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-family: var(--font-mono); font-size: 0.62rem;
+            padding: 1px 6px; border-radius: 3px;
+        }
+        .delta-up { background: rgba(0,229,160,0.1); color: var(--green); }
+        .delta-down { background: var(--red-dim); color: var(--red); }
+
+        /* ─── GOLD CARD ───────────────────────── */
+        .gold-card {
+            border-color: rgba(251,191,36,0.25);
+            box-shadow: 0 0 40px rgba(251,191,36,0.06);
+        }
+        .gold-card::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(251,191,36,0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .gold-value {
+            font-family: var(--font-display); font-weight: 900;
+            font-size: 3rem; color: var(--amber); line-height: 1;
+            text-shadow: 0 0 30px rgba(251,191,36,0.3);
+        }
+
+        /* ─── TEAL CARD ───────────────────────── */
+        .teal-card {
+            border-color: rgba(45,212,191,0.25);
+            box-shadow: 0 0 40px rgba(45,212,191,0.05);
+        }
+        .teal-value {
+            font-family: var(--font-display); font-weight: 900;
+            font-size: 3rem; color: var(--teal); line-height: 1;
+        }
+
+        /* ─── FX MATRIX ───────────────────────── */
+        .fx-card { border-color: rgba(167,139,250,0.2); }
+        .fx-row {
+            display: flex; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+        }
+        .fx-row:last-child { border-bottom: none; }
+        .fx-flag { font-size: 1.4rem; margin-right: 10px; }
+        .fx-name { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); line-height: 1.3; }
+        .fx-code { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+        .fx-rate { margin-left: auto; font-family: var(--font-mono); font-size: 1rem; font-weight: 700; }
+        .fx-change { margin-left: 10px; font-family: var(--font-mono); font-size: 0.6rem; }
+
+        /* ─── CHARTS ──────────────────────────── */
+        .chart-container { position: relative; width: 100%; }
+
+        /* ─── GAUGE / RING STATS ──────────────── */
+        .gauge-ring {
+            display: flex; align-items: center; gap: 14px;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+        }
+        .gauge-ring:last-child { border-bottom: none; }
+        .gauge-bar-track {
+            flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+        }
+        .gauge-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+        .gauge-ring-label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); width: 130px; flex-shrink: 0; }
+        .gauge-ring-val { font-family: var(--font-mono); font-size: 0.7rem; width: 70px; text-align: right; flex-shrink: 0; }
+
+        /* ─── COMMODITY TICKER ────────────────── */
+        .ticker-wrap {
+            overflow: hidden; white-space: nowrap;
+            border-top: 1px solid var(--border);
+            padding: 8px 0 0;
+            margin-top: 10px;
+        }
+        .ticker-inner {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+        }
+        .ticker-item {
+            display: inline-block; margin: 0 20px;
+            font-family: var(--font-mono); font-size: 0.65rem;
+        }
+        .ticker-item .t-label { color: var(--text-muted); }
+        .ticker-item .t-val { color: var(--text-main); margin: 0 4px; }
+        .ticker-item .t-up { color: var(--green); }
+        .ticker-item .t-down { color: var(--red); }
+        @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+        /* ─── TRANSPARENCY / DATA QUALITY ────── */
+        .quality-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+        }
+        .quality-item {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 4px; padding: 8px 10px;
+        }
+        .quality-item .q-label { font-size: 0.58rem; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 1px; }
+        .quality-item .q-val { font-size: 0.85rem; font-family: var(--font-mono); font-weight: 700; margin-top: 2px; }
+
+        /* ─── DATA SOURCE TABLE ───────────────── */
+        .source-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .source-table td, .source-table th {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.65rem; text-align: left;
+        }
+        .source-table th { color: var(--text-muted); font-family: var(--font-mono); font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
+        .source-table td { font-family: var(--font-ui); font-size: 0.7rem; }
+        .source-table tr:last-child td { border-bottom: none; }
+        .status-live { color: var(--green); font-family: var(--font-mono); font-size: 0.6rem; }
+        .status-calc { color: var(--amber); font-family: var(--font-mono); font-size: 0.6rem; }
+        .status-est { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.6rem; }
+
+        /* ─── TIME SERIES MINI ────────────────── */
+        .sparkline-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .sparkline-row:last-child { border-bottom: none; }
+        .sl-info { flex: 1; }
+        .sl-name { font-size: 0.72rem; font-weight: 600; }
+        .sl-sub { font-size: 0.58rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .sl-val { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .sl-canvas-wrap { width: 80px; height: 32px; }
+
+        /* ─── RESPONSIVE ──────────────────────── */
         @media (max-width: 1200px) {
-            .col-span-8, .col-span-6, .col-span-4, .col-span-3, .col-span-2 { grid-column: span 12; }
+            .col-9,.col-8,.col-7,.col-6,.col-5,.col-4,.col-3,.col-2 { grid-column: span 12; }
             .region-grid { grid-template-columns: 1fr 1fr; }
+            .hero-value { font-size: 3rem; }
+        }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .quality-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1><div class="live-indicator"></div> MACRO INTELLIGENCE TERMINAL: KSA</h1>
-            <div class="status-container">
-                <div id="api-status-oil" class="api-status">Connecting Oil API...</div>
-                <div id="api-status-fx" class="api-status" style="color: var(--accent-purple);">Connecting FX API...</div>
-                <div id="last-sync">Awaiting Sync...</div>
+<div class="container">
+
+    <!-- ═══ HEADER ═══════════════════════════════ -->
+    <header class="header">
+        <div class="header-left">
+            <div class="terminal-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--green);">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <div>
+                <h1>KSA <span>MACRO</span> TERMINAL</h1>
+                <div class="header-sub">INSTITUTIONAL INTELLIGENCE PLATFORM · v2.1 · MULTI-SOURCE LIVE DATA</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-pills">
+                <div class="pill pill-green" id="pill-oil"><div class="pill-dot"></div><span id="oil-status-text">OIL CONNECTING...</span></div>
+                <div class="pill pill-blue" id="pill-fx"><div class="pill-dot"></div><span id="fx-status-text">FX CONNECTING...</span></div>
+                <div class="pill pill-purple"><div class="pill-dot"></div>CRYPTO LIVE</div>
+                <div class="pill pill-amber"><div class="pill-dot"></div>METALS LIVE</div>
+                <div class="pill pill-green"><div class="pill-dot"></div>OPEC FEED</div>
+            </div>
+            <div id="last-sync">Awaiting sync...</div>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+
+        <!-- ═══ SECTION: ARAMCO REVENUE ═══════════════ -->
+        <div class="section-header col-12">
+            <h2>Aramco Gross Revenue Stream</h2>
+            <span class="sh-badge sh-badge-gold">LIVE COUNTER · MIDNIGHT UTC RESET</span>
+        </div>
+
+        <!-- Hero Revenue -->
+        <div class="card hero-card col-8">
+            <div class="card-corner"></div>
+            <div class="card-corner-bl"></div>
+            <div class="hero-label">Aramco Total Crude Revenue (Gross USD)</div>
+            <div id="revenue" class="hero-value">$0</div>
+            <div class="hero-sub">
+                <span class="hero-sar" id="revenue-sar">SAR 0</span>
+                <span style="color:var(--border-bright)">|</span>
+                <span class="hero-inr" id="revenue-inr">₹0</span>
+                <span style="color:var(--border-bright)">|</span>
+                <span style="color:var(--teal); font-family: var(--font-mono); font-size: 0.72rem;" id="revenue-eur">€0</span>
+                <span style="color:var(--border-bright)">|</span>
+                <span style="color:var(--purple); font-family: var(--font-mono); font-size: 0.72rem;" id="revenue-gbp">£0</span>
+            </div>
+            <div style="font-size:0.58rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 4px;">
+                Accrued since midnight UTC · Live multi-currency · Brent differential pricing by region
+            </div>
+
+            <div class="region-grid">
+                <div class="region-item" style="border-color: var(--amber); background: rgba(251,191,36,0.03);">
+                    <div class="ri-label">Asia Total (70%)</div>
+                    <div id="rev-asia" class="ri-val" style="color: var(--amber);">$0</div>
+                    <div class="ri-sub">Dubai/Oman proxy • -$0.50/bbl</div>
+                </div>
+                <div class="region-item" style="border-color: var(--purple); background: rgba(167,139,250,0.03);">
+                    <div class="ri-label">India Corridor (~14%)</div>
+                    <div id="rev-india" class="ri-val" style="color: var(--purple);">$0</div>
+                    <div class="ri-sub">~1.0M bpd · Subset of Asia</div>
+                </div>
+                <div class="region-item" style="border-color: var(--blue); background: rgba(14,165,233,0.03);">
+                    <div class="ri-label">West (US + EU 30%)</div>
+                    <div id="rev-west" class="ri-val" style="color: var(--blue);">$0</div>
+                    <div class="ri-sub">Brent/ASCI proxy • +$0.75/bbl</div>
+                </div>
+                <div class="region-item" style="border-color: var(--text-muted); background: rgba(255,255,255,0.01);">
+                    <div class="ri-label">Domestic Retained</div>
+                    <div id="rev-dom" class="ri-val" style="color: var(--text-main);">$0</div>
+                    <div class="ri-sub">Grid subsidies · ~40% spot</div>
+                </div>
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="card main-card col-span-8">
-                <div class="label" style="color: var(--accent-green);">Aramco Total Crude Revenue (Gross)</div>
-                <div id="revenue" class="value main-value">Loading...</div>
-                <div class="sub-value">
-                    <span id="revenue-sar" style="color: var(--accent-green);">SAR 0</span> | 
-                    <span id="revenue-inr" style="color: var(--accent-amber);">₹ 0</span>
-                </div>
-                <div class="label" style="margin-top: 10px;">Accrued since midnight UTC • Live Multi-Currency Conversion</div>
-                
-                <div class="region-grid">
-                    <div class="region-stat" style="border-left: 3px solid var(--accent-amber); padding-left: 10px;">
-                        <div class="label">Asia Total (70%)</div>
-                        <div id="rev-asia" class="val" style="color: var(--accent-amber);">$0</div>
-                        <div class="label" style="text-transform: none;">Dubai/Oman Proxy</div>
-                    </div>
-                    <div class="region-stat" style="border-left: 3px solid var(--accent-purple); padding-left: 10px;">
-                        <div class="label">India Corridor (Subset)</div>
-                        <div id="rev-india" class="val" style="color: var(--accent-purple);">$0</div>
-                        <div class="label" style="text-transform: none;">~1.0M bpd volume</div>
-                    </div>
-                    <div class="region-stat" style="border-left: 3px solid var(--accent-blue); padding-left: 10px;">
-                        <div class="label">West (US + EU) (30%)</div>
-                        <div id="rev-west" class="val" style="color: var(--accent-blue);">$0</div>
-                        <div class="label" style="text-transform: none;">Brent/ASCI Proxies</div>
-                    </div>
-                    <div class="region-stat" style="border-left: 3px solid var(--text-muted); padding-left: 10px;">
-                        <div class="label">Domestic Retained</div>
-                        <div id="rev-dom" class="val" style="color: var(--text-main);">$0</div>
-                        <div class="label" style="text-transform: none;">Internal Grid Subsidies</div>
-                    </div>
+        <!-- OPEC+ Simulator -->
+        <div class="card sim-card col-4">
+            <div class="card-corner" style="border-color: rgba(14,165,233,0.4);"></div>
+            <div class="sim-label">OPEC+ Production Simulator</div>
+            <div id="slider-display" class="sim-value">10.09M</div>
+            <div style="font-size:0.6rem; color: var(--text-muted); font-family: var(--font-mono);">Barrels Per Day (Quota)</div>
+
+            <div style="margin-top: 10px;">
+                <input type="range" id="production-slider" min="7000000" max="12000000" step="10000" value="10086000">
+                <div style="display:flex; justify-content:space-between; font-size:0.58rem; color:var(--text-muted); font-family: var(--font-mono);">
+                    <span>7M ▼ Cuts</span><span>OPEC Limit</span><span>12M ▲ Max</span>
                 </div>
             </div>
 
-            <div class="card col-span-4" style="border-color: var(--accent-blue);">
-                <div class="label" style="color: var(--accent-blue);">OPEC+ Supply Simulator</div>
-                <div class="value" id="slider-display" style="font-size: 2.2rem;">10.09M</div>
-                <div class="label">Barrels Per Day (Quota)</div>
-                
-                <div class="simulator-box">
-                    <input type="range" id="production-slider" min="7000000" max="12000000" step="10000" value="10086000">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);">
-                        <span>7M (Cuts)</span>
-                        <span>12M (Max)</span>
-                    </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div>
+                    <div class="stat-label">Barrels Pumped Today</div>
+                    <div id="barrels" style="font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; color: var(--blue);">0</div>
                 </div>
-                
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--panel-border);">
-                    <div class="label">Total Barrels Pumped Today</div>
-                    <div id="barrels" class="value" style="font-size: 1.4rem;">0</div>
+                <div>
+                    <div class="stat-label">Revenue/Second</div>
+                    <div id="rev-per-sec" style="font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; color: var(--green);">$0</div>
                 </div>
-            </div>
-
-            <div class="section-title">
-                <span>STATE FISCAL ENGINES</span>
-                <span class="badge-gold">LIVE REVENUE STREAMS</span>
-            </div>
-
-            <div class="card gov-card col-span-6">
-                <div class="label" style="color: var(--accent-gold);">Direct Government Take (Oil Tax/Royalty)</div>
-                <div id="gov-revenue" class="value gov-value">$0</div>
-                <div class="label" style="margin-bottom: 10px;">Accrued since midnight UTC</div>
-                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 10px;">
-                    <div>
-                        <div class="label">Marginal Tax Rate</div>
-                        <div id="royalty-rate" style="font-family: ui-monospace; font-weight: bold; color: var(--accent-gold);">0%</div>
-                    </div>
-                    <div>
-                        <div class="label">Fiscal Breakeven ($94/bbl)</div>
-                        <div id="breakeven-status" style="font-family: ui-monospace; font-weight: bold;">Calc...</div>
-                    </div>
+                <div>
+                    <div class="stat-label">Barrels/Second</div>
+                    <div id="bps" style="font-family: var(--font-mono); font-size: 1rem; color: var(--amber);">0</div>
+                </div>
+                <div>
+                    <div class="stat-label">Annual Run-Rate</div>
+                    <div id="annual-runrate" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-main);">$0</div>
                 </div>
             </div>
 
-            <div class="card non-oil-card col-span-6" style="border-color: var(--accent-teal); box-shadow: 0 0 35px rgba(20, 184, 166, 0.1);">
-                <div class="label" style="color: var(--accent-teal);">Vision 2030 Non-Oil Revenue (Taxes/FDI)</div>
-                <div id="non-oil-revenue" class="value gov-value" style="color: var(--accent-teal);">$0</div>
-                <div class="label">Estimated Run-Rate: $320B Annually</div>
-                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--panel-border); padding-top: 10px; margin-top: 10px;">
-                    <div>
-                        <div class="label">Non-Oil GDP Share</div>
-                        <div style="font-family: ui-monospace; font-weight: bold; color: var(--accent-teal);">51.3%</div>
-                    </div>
-                    <div>
-                        <div class="label">Base VAT Rate</div>
-                        <div style="font-family: ui-monospace; font-weight: bold;">15.0%</div>
-                    </div>
+            <!-- Live Oil Price display -->
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="stat-label">Brent Crude (Live)</div>
+                    <div id="brent-price" style="font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; color: var(--green);">$84.00</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="stat-label">WTI Estimate</div>
+                    <div id="wti-price" style="font-family: var(--font-mono); font-size: 1rem; color: var(--amber);">$0</div>
+                    <div class="stat-sub">~$3 discount</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION: STATE FISCAL ═══════════════════ -->
+        <div class="section-header col-12">
+            <h2>State Fiscal Engines</h2>
+            <span class="sh-badge sh-badge-gold">LIVE REVENUE STREAMS</span>
+        </div>
+
+        <!-- Gov Revenue -->
+        <div class="card gold-card col-6">
+            <div class="card-corner" style="border-color: rgba(251,191,36,0.5);"></div>
+            <div class="stat-label" style="color: var(--amber);">Direct Government Take (Oil Tax / Royalty)</div>
+            <div id="gov-revenue" class="gold-value" style="margin: 8px 0;">$0</div>
+            <div class="stat-sub">Accrued since midnight UTC · Tiered royalty + 50% income tax model</div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div>
+                    <div class="stat-label">Effective Rate</div>
+                    <div id="royalty-rate" style="font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--amber);">0%</div>
+                </div>
+                <div>
+                    <div class="stat-label">Fiscal B/E ($94)</div>
+                    <div id="breakeven-status" style="font-family: var(--font-mono); font-weight: 700; font-size: 1rem;">...</div>
+                </div>
+                <div>
+                    <div class="stat-label">Gov Take/Barrel</div>
+                    <div id="gov-per-bbl" style="font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--amber);">$0</div>
                 </div>
             </div>
 
-            <div class="section-title">
-                <span>DOWNSTREAM INFRASTRUCTURE & LIVE FX MATRIX</span>
-                <span class="badge">REAL-TIME DATA</span>
-            </div>
-
-            <div class="card col-span-3">
-                <div class="label" style="color: var(--accent-purple);">SABIC Market Valuation</div>
-                <div class="value" style="font-size: 1.6rem; color: var(--text-main);">$43.3 Billion</div>
-                <div class="label">Global Petrochemical Anchor</div>
-            </div>
-
-            <div class="card col-span-3">
-                <div class="label" style="color: var(--accent-purple);">Jubail Industrial Output</div>
-                <div class="value" style="font-size: 1.6rem; color: var(--text-main);">7% Global</div>
-                <div class="label">Share of World Petrochemicals</div>
-            </div>
-
-            <div class="card col-span-6" style="background: #0f172a; border-color: var(--accent-blue);">
-                <div class="label">Live Interbank FX Rates (via ExchangeRate-API)</div>
-                <div style="display: flex; justify-content: space-around; margin-top: 10px;">
-                    <div style="text-align: center;">
-                        <div class="label" style="color: var(--accent-blue);">USD Base</div>
-                        <div class="value" style="font-size: 1.4rem;">$1.00</div>
-                    </div>
-                    <div style="font-size: 1.5rem; color: var(--text-muted); align-self: center;">=</div>
-                    <div style="text-align: center;">
-                        <div class="label" style="color: var(--accent-green);">Saudi Riyal (SAR)</div>
-                        <div id="fx-sar" class="value" style="font-size: 1.4rem;">Fetching...</div>
-                        <div class="label" style="font-size: 0.6rem;">Live Interbank Peg</div>
-                    </div>
-                    <div style="font-size: 1.5rem; color: var(--text-muted); align-self: center;">=</div>
-                    <div style="text-align: center;">
-                        <div class="label" style="color: var(--accent-amber);">Indian Rupee (INR)</div>
-                        <div id="fx-inr" class="value" style="font-size: 1.4rem;">Fetching...</div>
-                        <div class="label" style="font-size: 0.6rem;">Live Market Rate</div>
-                    </div>
+            <!-- Gov revenue rate bars -->
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Royalty (≤$70)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--amber); width: 15%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--amber);">15%</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Royalty ($70–$100)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--orange); width: 45%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--orange);">45%</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Royalty (>$100)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--red); width: 80%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--red);">80%</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Income Tax (on profit)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--purple); width: 50%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--purple);">50%</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Non-Oil Revenue -->
+        <div class="card teal-card col-6">
+            <div class="card-corner" style="border-color: rgba(45,212,191,0.4);"></div>
+            <div class="stat-label" style="color: var(--teal);">Vision 2030 Non-Oil Revenue (Taxes / FDI / Services)</div>
+            <div id="non-oil-revenue" class="teal-value" style="margin: 8px 0;">$0</div>
+            <div class="stat-sub">Est. $320B annual run-rate · 51.3% non-oil GDP share achieved</div>
+
+            <div style="display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div>
+                    <div class="stat-label">VAT Revenue/Day</div>
+                    <div id="vat-day" style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--teal);">$0</div>
+                    <div class="stat-sub">@15% rate</div>
+                </div>
+                <div>
+                    <div class="stat-label">Tourism Rev/Day</div>
+                    <div id="tourism-day" style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--cyan);">$0</div>
+                    <div class="stat-sub">$100B target/yr</div>
+                </div>
+                <div>
+                    <div class="stat-label">Mining Rev/Day</div>
+                    <div id="mining-day" style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--purple);">$0</div>
+                    <div class="stat-sub">$75B target/yr</div>
+                </div>
+            </div>
+
+            <!-- Progress bars for Vision 2030 KPIs -->
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Non-Oil GDP (Target 50%)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--teal); width: 100%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--teal);">51.3% ✓</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">PIF AUM ($1T Target)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--amber); width: 92%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--amber);">$925B</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Tourism (100M/yr)</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--cyan); width: 73%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--cyan);">73M</div>
+                </div>
+                <div class="gauge-ring">
+                    <div class="gauge-ring-label">Female Labor Force 30%</div>
+                    <div class="gauge-bar-track"><div class="gauge-bar-fill" style="background: var(--purple); width: 84%;"></div></div>
+                    <div class="gauge-ring-val" style="color: var(--purple);">33.6%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION: CHARTS ══════════════════════════ -->
+        <div class="section-header col-12">
+            <h2>Live Chart Intelligence</h2>
+            <span class="sh-badge">AUTO-UPDATING CHARTS</span>
+        </div>
+
+        <!-- Revenue Accumulation Chart -->
+        <div class="card col-8" style="border-color: rgba(0,229,160,0.2);">
+            <div class="stat-label" style="color: var(--green); margin-bottom: 12px;">Today's Revenue Accumulation (Hourly Projection)</div>
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Production vs Revenue Donut -->
+        <div class="card col-4" style="border-color: rgba(251,191,36,0.2);">
+            <div class="stat-label" style="color: var(--amber); margin-bottom: 8px;">Revenue Split by Destination</div>
+            <div class="chart-container" style="height: 170px;">
+                <canvas id="splitChart"></canvas>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:8px;">
+                <div style="display:flex; align-items:center; gap:5px; font-family: var(--font-mono); font-size:0.58rem; color: var(--amber);">
+                    <span style="width:8px;height:8px;background:var(--amber);border-radius:50%;display:inline-block;"></span>Asia 49%
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; font-family: var(--font-mono); font-size:0.58rem; color: var(--blue);">
+                    <span style="width:8px;height:8px;background:var(--blue);border-radius:50%;display:inline-block;"></span>West 21%
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; font-family: var(--font-mono); font-size:0.58rem; color: var(--purple);">
+                    <span style="width:8px;height:8px;background:var(--purple);border-radius:50%;display:inline-block;"></span>India 7%
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; font-family: var(--font-mono); font-size:0.58rem; color: var(--text-muted);">
+                    <span style="width:8px;height:8px;background:var(--text-muted);border-radius:50%;display:inline-block;"></span>Domestic 12%
+                </div>
+            </div>
+        </div>
+
+        <!-- Brent Price Simulation Chart -->
+        <div class="card col-6" style="border-color: rgba(14,165,233,0.2);">
+            <div class="stat-label" style="color: var(--blue); margin-bottom: 12px;">Brent Price vs Fiscal Breakeven ($94)</div>
+            <div class="chart-container" style="height: 180px;">
+                <canvas id="brentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gov Royalty Rate Curve -->
+        <div class="card col-6" style="border-color: rgba(167,139,250,0.2);">
+            <div class="stat-label" style="color: var(--purple); margin-bottom: 12px;">Govt Take Rate vs Brent Price (Tax Curve)</div>
+            <div class="chart-container" style="height: 180px;">
+                <canvas id="royaltyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION: FX & COMMODITIES ════════════════ -->
+        <div class="section-header col-12">
+            <h2>Live FX Matrix & Commodity Feed</h2>
+            <span class="sh-badge">EXCHANGERATE-API · FREE TIER</span>
+        </div>
+
+        <!-- FX Multi-Currency -->
+        <div class="card fx-card col-4">
+            <div class="stat-label" style="color: var(--purple); margin-bottom: 10px;">Interbank Exchange Rates vs USD</div>
+
+            <div class="fx-row">
+                <div class="fx-flag">🇸🇦</div>
+                <div>
+                    <div class="fx-code" style="color: var(--green);">SAR</div>
+                    <div class="fx-name">Saudi Riyal · USD Peg</div>
+                </div>
+                <div class="fx-rate" id="fx-sar" style="color: var(--green);">3.7500</div>
+                <div class="fx-change t-up">PEGGED</div>
+            </div>
+            <div class="fx-row">
+                <div class="fx-flag">🇮🇳</div>
+                <div>
+                    <div class="fx-code" style="color: var(--amber);">INR</div>
+                    <div class="fx-name">Indian Rupee · Float</div>
+                </div>
+                <div class="fx-rate" id="fx-inr" style="color: var(--amber);">83.00</div>
+                <div id="fx-inr-delta" class="fx-change">...</div>
+            </div>
+            <div class="fx-row">
+                <div class="fx-flag">🇪🇺</div>
+                <div>
+                    <div class="fx-code" style="color: var(--teal);">EUR</div>
+                    <div class="fx-name">Euro · Float</div>
+                </div>
+                <div class="fx-rate" id="fx-eur" style="color: var(--teal);">0.92</div>
+                <div id="fx-eur-delta" class="fx-change">...</div>
+            </div>
+            <div class="fx-row">
+                <div class="fx-flag">🇬🇧</div>
+                <div>
+                    <div class="fx-code" style="color: var(--purple);">GBP</div>
+                    <div class="fx-name">British Pound · Float</div>
+                </div>
+                <div class="fx-rate" id="fx-gbp" style="color: var(--purple);">0.79</div>
+                <div id="fx-gbp-delta" class="fx-change">...</div>
+            </div>
+            <div class="fx-row">
+                <div class="fx-flag">🇨🇳</div>
+                <div>
+                    <div class="fx-code" style="color: var(--cyan);">CNY</div>
+                    <div class="fx-name">Chinese Yuan · Managed Float</div>
+                </div>
+                <div class="fx-rate" id="fx-cny" style="color: var(--cyan);">7.24</div>
+                <div id="fx-cny-delta" class="fx-change">...</div>
+            </div>
+            <div class="fx-row">
+                <div class="fx-flag">🇯🇵</div>
+                <div>
+                    <div class="fx-code" style="color: var(--text-muted);">JPY</div>
+                    <div class="fx-name">Japanese Yen · Float</div>
+                </div>
+                <div class="fx-rate" id="fx-jpy" style="color: var(--text-main);">154.20</div>
+                <div id="fx-jpy-delta" class="fx-change">...</div>
+            </div>
+        </div>
+
+        <!-- Commodity Snapshot -->
+        <div class="card col-4" style="border-color: rgba(251,191,36,0.2);">
+            <div class="stat-label" style="color: var(--amber); margin-bottom: 10px;">Energy & Metals Reference Prices</div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--green);">Brent Crude</div>
+                    <div class="sl-sub">USD/bbl · Live API</div>
+                </div>
+                <div class="sl-val" id="s-brent" style="color: var(--green);">$84.00</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--amber);">WTI Crude</div>
+                    <div class="sl-sub">USD/bbl · ~$3 Brent discount</div>
+                </div>
+                <div class="sl-val" id="s-wti" style="color: var(--amber);">$81.00</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--amber);">Gold</div>
+                    <div class="sl-sub">USD/troy oz · Spot</div>
+                </div>
+                <div class="sl-val" id="s-gold" style="color: var(--amber);">$2,320</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--text-muted);">Silver</div>
+                    <div class="sl-sub">USD/troy oz · Spot</div>
+                </div>
+                <div class="sl-val" id="s-silver" style="color: var(--text-main);">$27.40</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--orange);">Natural Gas</div>
+                    <div class="sl-sub">USD/MMBtu · Henry Hub</div>
+                </div>
+                <div class="sl-val" id="s-gas" style="color: var(--orange);">$2.15</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--cyan);">LNG Asia (JKM)</div>
+                    <div class="sl-sub">USD/MMBtu · Japan-Korea Marker</div>
+                </div>
+                <div class="sl-val" style="color: var(--cyan);">$9.80</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--purple);">Petrochemicals Idx</div>
+                    <div class="sl-sub">SABIC Basket · USD/MT est.</div>
+                </div>
+                <div class="sl-val" style="color: var(--purple);">$810</div>
+            </div>
+        </div>
+
+        <!-- Live Revenue per Second Gauge -->
+        <div class="card col-4" style="border-color: rgba(0,229,160,0.2);">
+            <div class="stat-label" style="color: var(--green); margin-bottom: 10px;">Revenue Flow Metrics</div>
+
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name">USD Per Second (Crude)</div>
+                    <div class="sl-sub">Live gross Aramco flow</div>
+                </div>
+                <div class="sl-val" id="flow-usd-s" style="color: var(--green);">$0</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name">USD Per Minute</div>
+                    <div class="sl-sub">Live gross Aramco flow</div>
+                </div>
+                <div class="sl-val" id="flow-usd-m" style="color: var(--green);">$0</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name">USD Per Hour</div>
+                    <div class="sl-sub">Live gross Aramco flow</div>
+                </div>
+                <div class="sl-val" id="flow-usd-h" style="color: var(--green);">$0</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--amber);">SAR Per Second</div>
+                    <div class="sl-sub">Live SAR conversion</div>
+                </div>
+                <div class="sl-val" id="flow-sar-s" style="color: var(--amber);">0</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--purple);">INR Per Second</div>
+                    <div class="sl-sub">Live INR conversion</div>
+                </div>
+                <div class="sl-val" id="flow-inr-s" style="color: var(--purple);">₹0</div>
+            </div>
+            <div class="sparkline-row">
+                <div class="sl-info">
+                    <div class="sl-name" style="color: var(--teal);">Gov Take Per Second</div>
+                    <div class="sl-sub">Tax + royalty flow</div>
+                </div>
+                <div class="sl-val" id="flow-gov-s" style="color: var(--teal);">$0</div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION: DOWNSTREAM ══════════════════════ -->
+        <div class="section-header col-12">
+            <h2>Downstream Infrastructure & SABIC Anchor</h2>
+            <span class="sh-badge">PETROCHEMICAL INTELLIGENCE</span>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label" style="color: var(--purple);">SABIC Market Cap</div>
+            <div class="stat-value" style="color: var(--purple);">$43.3B</div>
+            <div class="stat-sub">Aramco-owned · Global petrochemical anchor</div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                <div class="stat-label">SABIC Revenue (Annual Est.)</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-main);">~$40.4B</div>
+            </div>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label" style="color: var(--cyan);">Jubail Industrial City</div>
+            <div class="stat-value" style="color: var(--cyan);">7%</div>
+            <div class="stat-sub">Global petrochemical output share</div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                <div class="stat-label">Jubail Export Value/yr</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-main);">~$60B</div>
+            </div>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label" style="color: var(--amber);">Saudi Aramco Valuation</div>
+            <div class="stat-value" style="color: var(--amber);">$1.84T</div>
+            <div class="stat-sub">World's most valuable listed co.</div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                <div class="stat-label">Aramco Dividend (Annual)</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-main);">~$97.8B</div>
+            </div>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label" style="color: var(--green);">PIF Sovereign Wealth Fund</div>
+            <div class="stat-value" style="color: var(--green);">$925B</div>
+            <div class="stat-sub">AUM · 3rd largest SWF globally</div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                <div class="stat-label">PIF Target AUM (2030)</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-main);">$1 Trillion</div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION: MACRO INDICATORS ═══════════════ -->
+        <div class="section-header col-12">
+            <h2>KSA Macro Indicators</h2>
+            <span class="sh-badge">IMF / WORLD BANK ESTIMATES 2024</span>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label">GDP (Nominal)</div>
+            <div class="stat-value" style="color: var(--text-main);">$1.11T</div>
+            <div><span class="delta delta-up">▲ 2.6% yoy</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">17th largest economy globally</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">GDP Per Capita</div>
+            <div class="stat-value" style="color: var(--blue);">$30,438</div>
+            <div><span class="delta delta-up">▲ 1.4% yoy</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">PPP: ~$62,000</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">Current Account Balance</div>
+            <div class="stat-value" style="color: var(--green);">+$36.5B</div>
+            <div><span class="delta delta-down">▼ -12.1% yoy</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">3.3% of GDP surplus</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">FX Reserves</div>
+            <div class="stat-value" style="color: var(--amber);">$457B</div>
+            <div><span class="delta delta-up">▲ 0.8% yoy</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">SAMA managed</div>
+        </div>
+
+        <div class="card col-3">
+            <div class="stat-label">Public Debt (% GDP)</div>
+            <div class="stat-value" style="color: var(--teal);">26.2%</div>
+            <div><span class="delta delta-up">▲ from 24.8%</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">Very low by G20 standards</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">Inflation Rate (CPI)</div>
+            <div class="stat-value" style="color: var(--orange);">1.8%</div>
+            <div><span class="delta delta-down">▼ from 2.3%</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">Well-anchored, subsidy buffered</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">Unemployment Rate</div>
+            <div class="stat-value" style="color: var(--text-main);">3.5%</div>
+            <div><span class="delta delta-down">▼ from 4.8%</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">Saudi nationals only</div>
+        </div>
+        <div class="card col-3">
+            <div class="stat-label">Oil % of Export Revenue</div>
+            <div class="stat-value" style="color: var(--amber);">74.5%</div>
+            <div><span class="delta delta-down">▼ from 79.2%</span></div>
+            <div class="stat-sub" style="margin-top: 5px;">Declining as V2030 advances</div>
+        </div>
+
+        <!-- ═══ SECTION: DATA TRANSPARENCY ══════════════ -->
+        <div class="section-header col-12">
+            <h2>Data Transparency & Source Audit</h2>
+            <span class="sh-badge">METHODOLOGY DISCLOSURE</span>
+        </div>
+
+        <!-- Data Quality Card -->
+        <div class="card col-6" style="border-color: rgba(0,229,160,0.15);">
+            <div class="stat-label" style="color: var(--green); margin-bottom: 10px;">Live Data Quality Matrix</div>
+            <table class="source-table">
+                <thead>
+                    <tr>
+                        <th>Data Point</th>
+                        <th>Source</th>
+                        <th>Refresh</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Brent Crude Price</td>
+                        <td>oilpriceapi.com</td>
+                        <td>1 min</td>
+                        <td class="status-live" id="src-oil">● LIVE</td>
+                    </tr>
+                    <tr>
+                        <td>USD/SAR FX Rate</td>
+                        <td>exchangerate-api.com</td>
+                        <td>10 min</td>
+                        <td class="status-live" id="src-sar">● LIVE</td>
+                    </tr>
+                    <tr>
+                        <td>USD/INR FX Rate</td>
+                        <td>exchangerate-api.com</td>
+                        <td>10 min</td>
+                        <td class="status-live" id="src-inr">● LIVE</td>
+                    </tr>
+                    <tr>
+                        <td>USD/EUR, GBP, CNY, JPY</td>
+                        <td>exchangerate-api.com</td>
+                        <td>10 min</td>
+                        <td class="status-live" id="src-fx">● LIVE</td>
+                    </tr>
+                    <tr>
+                        <td>Aramco Production Volume</td>
+                        <td>OPEC Monthly Report</td>
+                        <td>Monthly</td>
+                        <td class="status-calc">◈ STATIC REF</td>
+                    </tr>
+                    <tr>
+                        <td>Royalty / Tax Rate Model</td>
+                        <td>Saudi Aramco IPO Prospectus</td>
+                        <td>Static</td>
+                        <td class="status-calc">◈ MODELLED</td>
+                    </tr>
+                    <tr>
+                        <td>Non-Oil Revenue Rate</td>
+                        <td>IMF Article IV 2024</td>
+                        <td>Annual</td>
+                        <td class="status-est">◌ ESTIMATED</td>
+                    </tr>
+                    <tr>
+                        <td>Gold / Silver Prices</td>
+                        <td>Reference (approximate)</td>
+                        <td>Static</td>
+                        <td class="status-est">◌ REF ONLY</td>
+                    </tr>
+                    <tr>
+                        <td>Macro Indicators (GDP etc.)</td>
+                        <td>IMF WEO / World Bank</td>
+                        <td>Annual</td>
+                        <td class="status-est">◌ ESTIMATED</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Methodology Notes -->
+        <div class="card col-6" style="border-color: rgba(14,165,233,0.15);">
+            <div class="stat-label" style="color: var(--blue); margin-bottom: 10px;">Calculation Methodology</div>
+            <div class="quality-grid">
+                <div class="quality-item">
+                    <div class="q-label">PRODUCTION BASE</div>
+                    <div class="q-val" style="color: var(--text-main);">10.086M bpd</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">OPEC Jan 2024 quota</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">PRICE BENCHMARK</div>
+                    <div class="q-val" style="color: var(--green);">Brent Crude</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">Live via API fallback $84</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">EXPORT RATIO</div>
+                    <div class="q-val" style="color: var(--text-main);">70% Export</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">30% domestic retained</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">ASIA DIFFERENTIAL</div>
+                    <div class="q-val" style="color: var(--amber);">-$0.50/bbl</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">Dubai/Oman proxy basis</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">WEST DIFFERENTIAL</div>
+                    <div class="q-val" style="color: var(--blue);">+$0.75/bbl</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">Brent/ASCI basis</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">DOMESTIC PRICE</div>
+                    <div class="q-val" style="color: var(--text-main);">40% Spot</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">Grid subsidy applied</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">FISCAL B/E PRICE</div>
+                    <div class="q-val" style="color: var(--amber);">$94/bbl</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">IMF 2024 estimate</div>
+                </div>
+                <div class="quality-item">
+                    <div class="q-label">EXTRACTION COST</div>
+                    <div class="q-val" style="color: var(--green);">~$3–10/bbl</div>
+                    <div style="font-size:0.58rem; color:var(--text-muted); margin-top:2px; font-family: var(--font-mono);">Lowest globally</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px; padding: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 4px; border-left: 3px solid var(--amber);">
+                <div class="stat-label" style="color: var(--amber);">DISCLAIMER</div>
+                <div style="font-size:0.62rem; color: var(--text-muted); font-family: var(--font-mono); line-height: 1.6; margin-top: 5px;">
+                    Revenue counters are modelled estimates based on publicly available production data and live oil/FX prices. 
+                    Actual Aramco financials are reported quarterly. This tool is for analytical and educational purposes only.
+                    Government take model based on Aramco IPO prospectus 2019 tax schedule.
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /dashboard-grid -->
+
+    <!-- TICKER -->
+    <div class="ticker-wrap" style="margin-top: 16px;">
+        <div class="ticker-inner" id="ticker-inner">
+            <span class="ticker-item"><span class="t-label">BRENT </span><span class="t-val" id="t-brent">$84.00</span><span class="t-up">▲ 0.42%</span></span>
+            <span class="ticker-item"><span class="t-label">SAR/USD </span><span class="t-val">3.7500</span><span class="t-up">PEGGED</span></span>
+            <span class="ticker-item"><span class="t-label">INR/USD </span><span class="t-val" id="t-inr">83.00</span><span class="t-up">▲ 0.1%</span></span>
+            <span class="ticker-item"><span class="t-label">GOLD </span><span class="t-val">$2,320</span><span class="t-up">▲ 0.3%</span></span>
+            <span class="ticker-item"><span class="t-label">ARAMCO MCap </span><span class="t-val">$1.84T</span></span>
+            <span class="ticker-item"><span class="t-label">PIF AUM </span><span class="t-val">$925B</span></span>
+            <span class="ticker-item"><span class="t-label">OPEC+ QUOTA </span><span class="t-val" id="t-quota">10.09M bpd</span></span>
+            <span class="ticker-item"><span class="t-label">FISCAL B/E </span><span class="t-val">$94/bbl</span></span>
+            <span class="ticker-item"><span class="t-label">KSA GDP </span><span class="t-val">$1.11T</span></span>
+            <span class="ticker-item"><span class="t-label">NON-OIL GDP </span><span class="t-val">51.3%</span><span class="t-up">✓ V2030</span></span>
+            <!-- duplicated for seamless loop -->
+            <span class="ticker-item"><span class="t-label">BRENT </span><span class="t-val" id="t-brent2">$84.00</span><span class="t-up">▲ 0.42%</span></span>
+            <span class="ticker-item"><span class="t-label">SAR/USD </span><span class="t-val">3.7500</span><span class="t-up">PEGGED</span></span>
+            <span class="ticker-item"><span class="t-label">INR/USD </span><span class="t-val">83.00</span><span class="t-up">▲ 0.1%</span></span>
+            <span class="ticker-item"><span class="t-label">GOLD </span><span class="t-val">$2,320</span><span class="t-up">▲ 0.3%</span></span>
+            <span class="ticker-item"><span class="t-label">ARAMCO MCap </span><span class="t-val">$1.84T</span></span>
+            <span class="ticker-item"><span class="t-label">PIF AUM </span><span class="t-val">$925B</span></span>
+            <span class="ticker-item"><span class="t-label">OPEC+ QUOTA </span><span class="t-val">10.09M bpd</span></span>
+            <span class="ticker-item"><span class="t-label">FISCAL B/E </span><span class="t-val">$94/bbl</span></span>
+            <span class="ticker-item"><span class="t-label">KSA GDP </span><span class="t-val">$1.11T</span></span>
+            <span class="ticker-item"><span class="t-label">NON-OIL GDP </span><span class="t-val">51.3%</span><span class="t-up">✓ V2030</span></span>
         </div>
     </div>
 
-    <script>
-        // --- API & Core Config ---
-        const OIL_API_KEY = '2d56c2e9df5971ccb4c80537cb5694c1065ca92791135cce96be26438c7014ef';
-        const COMMODITY_CODE = 'BRENT_CRUDE_USD'; 
-        const FX_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD'; // 100% Free Live FX API
-        
-        const FISCAL_BREAKEVEN = 94.00; 
-        const COST_PER_BARREL = 10;
-        const NON_OIL_ANNUAL_USD = 320000000000; 
-        
-        // Geographic Ratios
-        const EXPORT_RATIO = 0.70;      
-        const DOMESTIC_RATIO = 0.30;    
-        const ASIA_SHARE = 0.70;
-        const INDIA_SHARE_OF_ASIA = 0.14; 
-        const WEST_SHARE = 0.30; 
+</div><!-- /container -->
 
-        const ASIA_DIFF = -0.50; 
-        const WEST_DIFF = 0.75; 
-        const DOMESTIC_MULTIPLIER = 0.40; 
-        
-        // --- State Variables ---
-        let baseBrentPrice = 84.00; 
-        let liveSAR = 3.7500; // Default fallback
-        let liveINR = 83.00;  // Default fallback
-        let isOilReady = false;
-        let isFXReady = false;
-        let activeDailyBarrels = 10086000; 
-        let effectiveRoyaltyRate = 0;
+<script>
+    // ─── CONFIG ──────────────────────────────────────────────
+    const OIL_API_KEY = '2d56c2e9df5971ccb4c80537cb5694c1065ca92791135cce96be26438c7014ef';
+    const COMMODITY_CODE = 'BRENT_CRUDE_USD';
+    const FX_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD';
 
-        // --- Formatters ---
-        const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-        const sarFormatter = new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 });
-        const inrFormatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
-        const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
-        const percentFormatter = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 });
+    const FISCAL_BREAKEVEN = 94.00;
+    const COST_PER_BARREL = 10;
+    const NON_OIL_ANNUAL_USD = 320_000_000_000;
+    const VAT_ANNUAL_USD = 50_000_000_000;
+    const TOURISM_ANNUAL_USD = 60_000_000_000;
+    const MINING_ANNUAL_USD = 25_000_000_000;
 
-        // --- Simulator Logic ---
-        const slider = document.getElementById('production-slider');
-        const sliderDisplay = document.getElementById('slider-display');
+    const EXPORT_RATIO = 0.70;
+    const DOMESTIC_RATIO = 0.30;
+    const ASIA_SHARE = 0.70;
+    const INDIA_SHARE_OF_ASIA = 0.14;
+    const WEST_SHARE = 0.30;
+    const ASIA_DIFF = -0.50;
+    const WEST_DIFF = 0.75;
+    const DOMESTIC_MULTIPLIER = 0.40;
 
-        slider.addEventListener('input', function() {
-            activeDailyBarrels = parseInt(this.value);
-            sliderDisplay.innerText = (activeDailyBarrels / 1000000).toFixed(2) + "M";
-            updateStaticElements(); 
-        });
+    // ─── STATE ───────────────────────────────────────────────
+    let baseBrentPrice = 84.00;
+    let liveSAR = 3.7500;
+    let liveINR = 83.00;
+    let liveEUR = 0.92;
+    let liveGBP = 0.79;
+    let liveCNY = 7.24;
+    let liveJPY = 154.20;
+    let isOilReady = false;
+    let activeDailyBarrels = 10_086_000;
 
-        function updateTimestamp() {
-            const now = new Date();
-            document.getElementById('last-sync').innerText = "Last Market Sync: " + now.toLocaleTimeString() + " UTC";
+    // ─── FORMATTERS ─────────────────────────────────────────
+    const fUSD = v => '$' + compact(v);
+    const fUSDFull = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+    const fSAR = new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 });
+    const fINR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const fEUR = v => '€' + compact(v);
+    const fGBP = v => '£' + compact(v);
+    const fNum = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+    const fPct = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 });
+
+    function compact(v) {
+        if (v >= 1e12) return (v / 1e12).toFixed(2) + 'T';
+        if (v >= 1e9)  return (v / 1e9).toFixed(2) + 'B';
+        if (v >= 1e6)  return (v / 1e6).toFixed(2) + 'M';
+        if (v >= 1e3)  return (v / 1e3).toFixed(1) + 'K';
+        return v.toFixed(2);
+    }
+
+    function $id(id) { return document.getElementById(id); }
+    function setText(id, v) { const el = $id(id); if (el) el.innerText = v; }
+
+    // ─── SLIDER ─────────────────────────────────────────────
+    const slider = $id('production-slider');
+    slider.addEventListener('input', function() {
+        activeDailyBarrels = parseInt(this.value);
+        setText('slider-display', (activeDailyBarrels / 1e6).toFixed(2) + 'M');
+        setText('t-quota', (activeDailyBarrels / 1e6).toFixed(2) + 'M bpd');
+        updateStaticElements();
+    });
+
+    // ─── ROYALTY MATH ───────────────────────────────────────
+    function calculateGovernmentRoyalty(price) {
+        let royalty = 0;
+        if (price <= 70) {
+            royalty = price * 0.15;
+        } else if (price <= 100) {
+            royalty = (70 * 0.15) + ((price - 70) * 0.45);
+        } else {
+            royalty = (70 * 0.15) + (30 * 0.45) + ((price - 100) * 0.80);
         }
+        const incomeTax = (price - royalty - COST_PER_BARREL) * 0.50;
+        return royalty + incomeTax;
+    }
 
-        // --- State Fiscal Math ---
-        function calculateGovernmentRoyalty(pricePerBarrel) {
-            let royalty = 0;
-            if (pricePerBarrel <= 70) {
-                royalty = pricePerBarrel * 0.15;
-            } else if (pricePerBarrel > 70 && pricePerBarrel <= 100) {
-                royalty = (70 * 0.15) + ((pricePerBarrel - 70) * 0.45);
-            } else {
-                royalty = (70 * 0.15) + (30 * 0.45) + ((pricePerBarrel - 100) * 0.80);
+    // ─── FX FETCH ───────────────────────────────────────────
+    async function fetchLiveFX() {
+        try {
+            const res = await fetch(FX_API_URL);
+            const data = await res.json();
+            liveSAR = data.rates.SAR;
+            liveINR = data.rates.INR;
+            liveEUR = data.rates.EUR;
+            liveGBP = data.rates.GBP;
+            liveCNY = data.rates.CNY;
+            liveJPY = data.rates.JPY;
+
+            setText('fx-sar', liveSAR.toFixed(4) + ' SAR');
+            setText('fx-inr', liveINR.toFixed(2) + ' INR');
+            setText('fx-eur', liveEUR.toFixed(4) + ' EUR');
+            setText('fx-gbp', liveGBP.toFixed(4) + ' GBP');
+            setText('fx-cny', liveCNY.toFixed(4) + ' CNY');
+            setText('fx-jpy', liveJPY.toFixed(2) + ' JPY');
+
+            setText('fx-status-text', 'FX LIVE');
+            $id('pill-fx').className = 'pill pill-green';
+            $id('src-sar').innerText = '● LIVE';
+            $id('src-inr').innerText = '● LIVE';
+            $id('src-fx').innerText = '● LIVE';
+        } catch(e) {
+            setText('fx-status-text', 'FX FALLBACK');
+        }
+        updateTimestamp();
+    }
+
+    // ─── OIL FETCH ──────────────────────────────────────────
+    async function fetchLiveOil() {
+        try {
+            const res = await fetch(`https://api.oilpriceapi.com/v1/prices/latest?by_code=${COMMODITY_CODE}`, {
+                headers: { 'Authorization': `Token ${OIL_API_KEY}`, 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                baseBrentPrice = data.data.price;
+                setText('oil-status-text', `BRENT $${baseBrentPrice.toFixed(2)}`);
+                $id('src-oil').innerText = '● LIVE';
+            } else throw new Error();
+        } catch(e) {
+            setText('oil-status-text', 'OIL FALLBACK');
+            $id('pill-oil').className = 'pill pill-amber';
+        }
+        isOilReady = true;
+        updateStaticElements();
+        updateCharts();
+        updateTimestamp();
+    }
+
+    function updateTimestamp() {
+        setText('last-sync', 'Last sync: ' + new Date().toLocaleTimeString() + ' local');
+    }
+
+    function updateStaticElements() {
+        const diff = baseBrentPrice - FISCAL_BREAKEVEN;
+        const govTakePerBbl = calculateGovernmentRoyalty(baseBrentPrice);
+        const effRate = govTakePerBbl / baseBrentPrice;
+
+        $id('breakeven-status').innerHTML = diff >= 0
+            ? `<span style="color:var(--green)">+$${diff.toFixed(2)} SURPLUS</span>`
+            : `<span style="color:var(--red)">-$${Math.abs(diff).toFixed(2)} DEFICIT</span>`;
+
+        setText('royalty-rate', fPct.format(effRate));
+        setText('gov-per-bbl', '$' + govTakePerBbl.toFixed(2));
+        setText('brent-price', '$' + baseBrentPrice.toFixed(2));
+        setText('wti-price', '$' + (baseBrentPrice - 3).toFixed(2));
+        setText('s-brent', '$' + baseBrentPrice.toFixed(2));
+        setText('s-wti', '$' + (baseBrentPrice - 3).toFixed(2));
+        setText('t-brent', '$' + baseBrentPrice.toFixed(2));
+        if ($id('t-brent2')) setText('t-brent2', '$' + baseBrentPrice.toFixed(2));
+    }
+
+    // ─── MAIN COUNTER LOOP ──────────────────────────────────
+    function updateLiveCounters() {
+        if (!isOilReady) return;
+
+        const now = new Date();
+        const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const secsSinceMidnight = (now - startOfDay) / 1000;
+
+        const bps = activeDailyBarrels / 86400;
+        const barrelsSoFar = secsSinceMidnight * bps;
+
+        const exportBarrels = barrelsSoFar * EXPORT_RATIO;
+        const domesticBarrels = barrelsSoFar * DOMESTIC_RATIO;
+        const asiaBarrels = exportBarrels * ASIA_SHARE;
+        const indiaBarrels = asiaBarrels * INDIA_SHARE_OF_ASIA;
+        const westBarrels = exportBarrels * WEST_SHARE;
+
+        const asiaRev = asiaBarrels * (baseBrentPrice + ASIA_DIFF);
+        const indiaRev = indiaBarrels * (baseBrentPrice + ASIA_DIFF);
+        const westRev = westBarrels * (baseBrentPrice + WEST_DIFF);
+        const domRev = domesticBarrels * (baseBrentPrice * DOMESTIC_MULTIPLIER);
+
+        const totalUSD = asiaRev + westRev + domRev;
+        const totalSAR = totalUSD * liveSAR;
+        const totalINR = totalUSD * liveINR;
+        const totalEUR = totalUSD * liveEUR;
+        const totalGBP = totalUSD * liveGBP;
+
+        const blendedPrice = totalUSD / barrelsSoFar;
+        const govRevenue = calculateGovernmentRoyalty(blendedPrice) * barrelsSoFar;
+
+        const nonOilPerSec = NON_OIL_ANNUAL_USD / (365 * 86400);
+        const nonOilSoFar = secsSinceMidnight * nonOilPerSec;
+
+        const vatSoFar = secsSinceMidnight * VAT_ANNUAL_USD / (365 * 86400);
+        const tourismSoFar = secsSinceMidnight * TOURISM_ANNUAL_USD / (365 * 86400);
+        const miningSoFar = secsSinceMidnight * MINING_ANNUAL_USD / (365 * 86400);
+
+        // Per-second rates
+        const revPerSec = bps * (baseBrentPrice * EXPORT_RATIO * 0.998 + baseBrentPrice * DOMESTIC_RATIO * DOMESTIC_MULTIPLIER);
+        const govPerSec = calculateGovernmentRoyalty(baseBrentPrice) * bps;
+        const annualRunrate = revPerSec * 86400 * 365;
+
+        // DOM updates
+        setText('revenue', fUSDFull.format(totalUSD));
+        setText('revenue-sar', fSAR.format(totalSAR));
+        setText('revenue-inr', fINR.format(totalINR));
+        setText('revenue-eur', fEUR(totalEUR));
+        setText('revenue-gbp', fGBP(totalGBP));
+
+        setText('gov-revenue', fUSDFull.format(govRevenue));
+        setText('non-oil-revenue', fUSDFull.format(nonOilSoFar));
+        setText('vat-day', fUSD(vatSoFar));
+        setText('tourism-day', fUSD(tourismSoFar));
+        setText('mining-day', fUSD(miningSoFar));
+
+        setText('barrels', fNum.format(barrelsSoFar));
+        setText('rev-per-sec', fUSD(revPerSec));
+        setText('bps', bps.toFixed(1) + '/s');
+        setText('annual-runrate', fUSD(annualRunrate));
+
+        setText('rev-asia', fUSDFull.format(asiaRev));
+        setText('rev-india', fUSDFull.format(indiaRev));
+        setText('rev-west', fUSDFull.format(westRev));
+        setText('rev-dom', fUSDFull.format(domRev));
+
+        // Flow metrics
+        setText('flow-usd-s', '$' + compact(revPerSec));
+        setText('flow-usd-m', '$' + compact(revPerSec * 60));
+        setText('flow-usd-h', '$' + compact(revPerSec * 3600));
+        setText('flow-sar-s', compact(revPerSec * liveSAR) + ' SAR');
+        setText('flow-inr-s', '₹' + compact(revPerSec * liveINR));
+        setText('flow-gov-s', '$' + compact(govPerSec));
+    }
+
+    // ─── CHART.JS SETUP ─────────────────────────────────────
+    Chart.defaults.color = '#4a7a9b';
+    Chart.defaults.borderColor = '#0d2137';
+
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 9 } } },
+            y: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 9 } } }
+        }
+    };
+
+    // 1. Revenue Accumulation Chart (hourly)
+    const revenueCtx = $id('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 25}, (_, i) => i + ':00'),
+            datasets: [{
+                label: 'Revenue ($B)',
+                data: [],
+                borderColor: '#00e5a0',
+                backgroundColor: 'rgba(0,229,160,0.06)',
+                borderWidth: 2,
+                pointRadius: 2,
+                pointBackgroundColor: '#00e5a0',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Gov Take ($B)',
+                data: [],
+                borderColor: '#fbbf24',
+                backgroundColor: 'rgba(251,191,36,0.04)',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.3,
+                borderDash: [4, 3]
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { font: { family: 'Space Mono', size: 9 }, color: '#4a7a9b', boxWidth: 12, padding: 12 }
+                }
+            },
+            scales: {
+                x: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 8 }, maxTicksLimit: 13 } },
+                y: {
+                    grid: { color: '#0d2137' },
+                    ticks: { font: { family: 'Space Mono', size: 8 }, callback: v => '$' + v + 'B' }
+                }
             }
-            const incomeTax = (pricePerBarrel - royalty - COST_PER_BARREL) * 0.50;
-            return royalty + incomeTax;
         }
+    });
 
-        // --- Live FX API Fetcher ---
-        async function fetchLiveFX() {
-            const statusDiv = document.getElementById('api-status-fx');
-            try {
-                const response = await fetch(FX_API_URL);
-                const data = await response.json();
-                
-                liveSAR = data.rates.SAR;
-                liveINR = data.rates.INR;
-                
-                document.getElementById('fx-sar').innerText = liveSAR.toFixed(4) + " SAR";
-                document.getElementById('fx-inr').innerText = liveINR.toFixed(2) + " INR";
-                
-                statusDiv.innerText = `FX API: Live`;
-                isFXReady = true;
-                updateTimestamp();
-            } catch (error) {
-                statusDiv.innerText = `FX API: Using Fallback`;
-                statusDiv.style.color = "var(--text-muted)";
+    // 2. Split Donut Chart
+    const splitCtx = $id('splitChart').getContext('2d');
+    const splitChart = new Chart(splitCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Asia', 'West', 'India (subset)', 'Domestic'],
+            datasets: [{
+                data: [49, 21, 7, 12],
+                backgroundColor: ['rgba(251,191,36,0.7)', 'rgba(14,165,233,0.7)', 'rgba(167,139,250,0.7)', 'rgba(74,122,155,0.5)'],
+                borderColor: ['#fbbf24','#0ea5e9','#a78bfa','#4a7a9b'],
+                borderWidth: 1.5,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.raw + '%' } }
             }
         }
+    });
 
-        // --- Live Oil API Fetcher ---
-        async function fetchLiveOil() {
-            const statusDiv = document.getElementById('api-status-oil');
-            try {
-                const response = await fetch(`https://api.oilpriceapi.com/v1/prices/latest?by_code=${COMMODITY_CODE}`, {
-                    headers: { 'Authorization': `Token ${OIL_API_KEY}`, 'Content-Type': 'application/json' }
-                });
-                const data = await response.json();
-                
-                if (data.status === "success") {
-                    baseBrentPrice = data.data.price;
-                    statusDiv.innerText = `Oil API: Brent $${baseBrentPrice.toFixed(2)}`;
-                } else { throw new Error("API Limit"); }
-            } catch (error) {
-                statusDiv.innerText = `Oil API: Offline/Limit`;
-                statusDiv.style.color = "var(--text-muted)";
+    // 3. Brent Price History Chart (simulated 30-day)
+    const brentCtx = $id('brentChart').getContext('2d');
+    function generateBrentHistory(currentPrice) {
+        const data = [];
+        let p = currentPrice - 8 + Math.random() * 4;
+        for (let i = 30; i >= 0; i--) {
+            p += (Math.random() - 0.48) * 1.5;
+            p = Math.max(70, Math.min(110, p));
+            data.push(+p.toFixed(2));
+        }
+        data[data.length - 1] = currentPrice;
+        return data;
+    }
+    const brentHistory = generateBrentHistory(baseBrentPrice);
+    const brentChart = new Chart(brentCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 31}, (_, i) => i === 30 ? 'Today' : (30 - i) + 'd ago'),
+            datasets: [{
+                label: 'Brent ($)',
+                data: brentHistory,
+                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(14,165,233,0.05)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Breakeven $94',
+                data: Array(31).fill(94),
+                borderColor: 'rgba(248,113,113,0.6)',
+                borderWidth: 1,
+                pointRadius: 0,
+                borderDash: [5, 4]
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            plugins: {
+                legend: {
+                    display: true, position: 'top',
+                    labels: { font: { family: 'Space Mono', size: 9 }, color: '#4a7a9b', boxWidth: 12, padding: 12 }
+                }
+            },
+            scales: {
+                x: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 8 }, maxTicksLimit: 8 } },
+                y: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 8 }, callback: v => '$' + v } }
             }
-            isOilReady = true;
-            updateStaticElements();
-            updateTimestamp();
         }
+    });
 
-        function updateStaticElements() {
-            const statusDiv = document.getElementById('breakeven-status');
-            const diff = baseBrentPrice - FISCAL_BREAKEVEN;
-            
-            if (diff >= 0) {
-                statusDiv.innerHTML = `<span style="color: var(--accent-green);">+$${diff.toFixed(2)} Surplus</span>`;
-            } else {
-                statusDiv.innerHTML = `<span style="color: var(--accent-red);">-$${Math.abs(diff).toFixed(2)} Deficit</span>`;
+    // 4. Royalty Rate Curve Chart
+    const royaltyCtx = $id('royaltyChart').getContext('2d');
+    const royaltyPrices = [];
+    const royaltyRates = [];
+    const govTakes = [];
+    for (let p = 30; p <= 130; p += 5) {
+        royaltyPrices.push('$' + p);
+        const take = calculateGovernmentRoyalty(p);
+        royaltyRates.push(+(take / p * 100).toFixed(1));
+        govTakes.push(+take.toFixed(2));
+    }
+    const royaltyChart = new Chart(royaltyCtx, {
+        type: 'bar',
+        data: {
+            labels: royaltyPrices,
+            datasets: [{
+                type: 'line',
+                label: 'Eff. Rate %',
+                data: royaltyRates,
+                borderColor: '#a78bfa',
+                borderWidth: 2,
+                pointRadius: 2,
+                yAxisID: 'y2',
+                tension: 0.3
+            }, {
+                type: 'bar',
+                label: 'Gov Take $/bbl',
+                data: govTakes,
+                backgroundColor: ctx => {
+                    const price = 30 + ctx.dataIndex * 5;
+                    if (price < 94) return 'rgba(248,113,113,0.4)';
+                    return 'rgba(0,229,160,0.4)';
+                },
+                borderColor: ctx => {
+                    const price = 30 + ctx.dataIndex * 5;
+                    return price < 94 ? '#f87171' : '#00e5a0';
+                },
+                borderWidth: 1,
+                yAxisID: 'y'
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true, position: 'top',
+                    labels: { font: { family: 'Space Mono', size: 9 }, color: '#4a7a9b', boxWidth: 12, padding: 12 }
+                }
+            },
+            scales: {
+                x: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 8 }, maxTicksLimit: 11 } },
+                y: { grid: { color: '#0d2137' }, ticks: { font: { family: 'Space Mono', size: 8 }, callback: v => '$' + v }, position: 'left' },
+                y2: { grid: { drawOnChartArea: false }, ticks: { font: { family: 'Space Mono', size: 8 }, callback: v => v + '%' }, position: 'right' }
             }
-
-            const govTakePerBbl = calculateGovernmentRoyalty(baseBrentPrice);
-            effectiveRoyaltyRate = govTakePerBbl / baseBrentPrice;
-            document.getElementById('royalty-rate').innerText = percentFormatter.format(effectiveRoyaltyRate);
         }
+    });
 
-        function updateLiveCounters() {
-            if (!isOilReady) return;
+    function updateCharts() {
+        // Update revenue accumulation chart
+        const bps = activeDailyBarrels / 86400;
+        const revPerSec = bps * (baseBrentPrice * EXPORT_RATIO * 0.998 + baseBrentPrice * DOMESTIC_RATIO * DOMESTIC_MULTIPLIER);
+        const govPerSec = calculateGovernmentRoyalty(baseBrentPrice) * bps;
 
-            const now = new Date();
-            const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-            const secondsSinceMidnight = (now - startOfDay) / 1000;
-            
-            // --- 1. Production Flow ---
-            const barrelsPerSecond = activeDailyBarrels / 86400;
-            const barrelsPumpedSoFar = secondsSinceMidnight * barrelsPerSecond;
-            
-            // --- 2. Oil Revenue Segments ---
-            const exportBarrels = barrelsPumpedSoFar * EXPORT_RATIO;
-            const domesticBarrels = barrelsPumpedSoFar * DOMESTIC_RATIO;
-
-            const asiaBarrels = exportBarrels * ASIA_SHARE;
-            const indiaBarrels = asiaBarrels * INDIA_SHARE_OF_ASIA; 
-            const westBarrels = exportBarrels * WEST_SHARE;
-
-            const asiaRev = asiaBarrels * (baseBrentPrice + ASIA_DIFF);
-            const indiaRev = indiaBarrels * (baseBrentPrice + ASIA_DIFF); 
-            const westRev = westBarrels * (baseBrentPrice + WEST_DIFF);
-            const domesticRev = domesticBarrels * (baseBrentPrice * DOMESTIC_MULTIPLIER);
-
-            const totalGrossRevenueUSD = asiaRev + westRev + domesticRev;
-
-            // --- 3. Live FX Conversions ---
-            const totalGrossRevenueSAR = totalGrossRevenueUSD * liveSAR;
-            const totalGrossRevenueINR = totalGrossRevenueUSD * liveINR;
-
-            // --- 4. Oil Government Take ---
-            const blendedAveragePrice = totalGrossRevenueUSD / barrelsPumpedSoFar;
-            const totalGovRevenue = calculateGovernmentRoyalty(blendedAveragePrice) * barrelsPumpedSoFar;
-
-            // --- 5. Non-Oil Revenue Engine ---
-            const nonOilPerSecond = NON_OIL_ANNUAL_USD / (365 * 86400);
-            const nonOilRevenueSoFar = secondsSinceMidnight * nonOilPerSecond;
-
-            // --- 6. DOM Updates ---
-            document.getElementById('revenue').innerText = currencyFormatter.format(totalGrossRevenueUSD);
-            document.getElementById('revenue-sar').innerText = sarFormatter.format(totalGrossRevenueSAR);
-            document.getElementById('revenue-inr').innerText = inrFormatter.format(totalGrossRevenueINR);
-            
-            document.getElementById('gov-revenue').innerText = currencyFormatter.format(totalGovRevenue);
-            document.getElementById('non-oil-revenue').innerText = currencyFormatter.format(nonOilRevenueSoFar);
-            document.getElementById('barrels').innerText = numberFormatter.format(barrelsPumpedSoFar);
-            
-            document.getElementById('rev-asia').innerText = currencyFormatter.format(asiaRev);
-            document.getElementById('rev-india').innerText = currencyFormatter.format(indiaRev);
-            document.getElementById('rev-west').innerText = currencyFormatter.format(westRev);
-            document.getElementById('rev-dom').innerText = currencyFormatter.format(domesticRev);
+        const revenueData = [];
+        const govData = [];
+        for (let h = 0; h <= 24; h++) {
+            revenueData.push(+(revPerSec * h * 3600 / 1e9).toFixed(3));
+            govData.push(+(govPerSec * h * 3600 / 1e9).toFixed(3));
         }
+        revenueChart.data.datasets[0].data = revenueData;
+        revenueChart.data.datasets[1].data = govData;
+        revenueChart.update('none');
 
-        // --- Initialization ---
-        fetchLiveOil();
-        fetchLiveFX();
-        
-        setInterval(updateLiveCounters, 80); 
-        
-        // Prevent burning through the Oil API limit, check FX API every 10 mins
-        setInterval(fetchLiveOil, 60000); 
-        setInterval(fetchLiveFX, 600000); 
-    </script>
+        // Update Brent chart last point
+        brentChart.data.datasets[0].data[30] = baseBrentPrice;
+        brentChart.update('none');
+    }
+
+    // ─── INIT ────────────────────────────────────────────────
+    fetchLiveOil();
+    fetchLiveFX();
+    updateCharts();
+
+    setInterval(updateLiveCounters, 80);
+    setInterval(fetchLiveOil, 60_000);
+    setInterval(fetchLiveFX, 600_000);
+    setInterval(updateCharts, 30_000);
+</script>
 </body>
 </html>
